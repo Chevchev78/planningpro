@@ -1,6 +1,6 @@
 // Hors-ligne : on sert la copie en cache tout de suite, puis on la rafraîchit en arrière-plan.
 // Changer CACHE à chaque mise en ligne pour purger les anciennes versions.
-const CACHE = 'planningpro-v6';
+const CACHE = 'planningpro-v7';
 // La police (Google Fonts) a son propre cache, gardé d'une version à l'autre.
 const FONT_CACHE = 'planningpro-fonts';
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];

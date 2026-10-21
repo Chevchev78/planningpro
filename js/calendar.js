@@ -32,14 +32,16 @@ export function initCalendar() {
   }
 
   function cellHTML(cell, active) {
+    // Comme Cal42+ : les jours des mois voisins restent des cases vides.
+    if (!cell.inMonth) return '<span class="cell empty" aria-hidden="true"></span>';
     const info = dayInfo(store.state, cell.iso);
     const isToday = cell.iso === today;
     const isSelected = active && cell.iso === selected;
-    const cls = ['cell', !cell.inMonth && 'out', info.type === 'repos' && 'repos', isToday && 'today', isSelected && 'selected', info.note && 'has-note']
+    const cls = ['cell', info.type === 'repos' && 'repos', isToday && 'today', isSelected && 'selected', info.note && 'has-note']
       .filter(Boolean).join(' ');
     const label = `${fmtAria.format(toDate(cell.iso))}, ${LABELS[info.type]}${info.note ? ', avec une note' : ''}`;
     return `<button type="button" class="${cls}" data-iso="${cell.iso}" style="${typeVars(info.type)}" aria-label="${esc(label)}"`
-      + `${active ? ` aria-pressed="${isSelected}"` : ''}${isToday ? ' aria-current="date"' : ''}${active && cell.inMonth ? '' : ' tabindex="-1"'}>`
+      + `${active ? ` aria-pressed="${isSelected}"` : ' tabindex="-1"'}${isToday ? ' aria-current="date"' : ''}>`
       + `<span class="num">${cell.day}</span></button>`;
   }
 
@@ -176,12 +178,9 @@ export function initCalendar() {
 
   track.addEventListener('click', e => {
     if (justDragged) { justDragged = false; return; }
-    const cell = e.target.closest('.cell');
+    const cell = e.target.closest('.cell[data-iso]');
     if (!cell || animating) return;
-    const iso = cell.dataset.iso;
-    const diff = monthIndex(monthOf(iso)) - monthIndex(view);
-    if (diff === 0) select(iso);
-    else goMonth(Math.sign(diff), iso);
+    select(cell.dataset.iso);
   });
 
   viewport.addEventListener('pointerdown', e => {

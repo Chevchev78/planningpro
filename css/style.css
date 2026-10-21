@@ -261,14 +261,14 @@ textarea:focus { outline: none; border-color: var(--text-2); }
   transition: transform .15s var(--ease), box-shadow .2s var(--ease);
 }
 .cell.repos { background: var(--surface-2); color: var(--text); }
-.cell.out { opacity: .3; }
+.cell.empty { background: transparent; }
 .cell.selected { z-index: 1; box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--text); }
 .cell.today .num { font-weight: 700; }
 .cell.today::after { content: ""; position: absolute; left: 50%; bottom: 6px; width: 14px; height: 2px; margin-left: -7px; border-radius: 1px; background: currentColor; }
 /* Note : coin replié bien visible, dans la couleur du texte de la case */
 .cell { overflow: hidden; }
 .cell.has-note::before { content: ""; position: absolute; top: 0; right: 0; width: 16px; height: 16px; background: linear-gradient(225deg, currentColor 50%, transparent 50%); }
-.cell:active { transform: scale(.93); }
+button.cell:active { transform: scale(.93); }
 
 .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 6px 0; padding: 0; list-style: none; font-size: 13px; color: var(--text-2); }
 .legend li { display: flex; align-items: center; gap: 6px; }
