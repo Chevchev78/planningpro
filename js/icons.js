@@ -14,7 +14,8 @@ const PATHS = {
 
   // Interface
   settings: '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
-  today: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M12 14.5v.01"/>',
+  today: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  cycle: '<path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4h-4"/>',
   chevronLeft: '<path d="m15 18-6-6 6-6"/>',
   chevronRight: '<path d="m9 18 6-6-6-6"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',

@@ -7,7 +7,9 @@ Configurez votre roulement une fois et voyez d'un coup d'œil comment vous trava
 
 ## Fonctions
 
-- Cycle de 1 à 60 jours : matin, après-midi, soirée, nuit, journée ou repos
+- Trois onglets : Planning, Cycle, Réglages
+- Carte du jour : poste, position dans le cycle, lendemain et prochaine reprise
+- Cycle de 1 à 60 jours : matin, après-midi, soirée, nuit, journée ou repos, avec modèles 2/2, 3/3, 4/2, 4/4, 5/2
 - Calendrier mensuel coloré, swipe entre les mois
 - Note et jour de congé pour chaque date
 - Compteur du mois (jours travaillés, nuits, repos, congés…)

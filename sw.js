@@ -1,6 +1,9 @@
 // Hors-ligne : on sert la copie en cache tout de suite, puis on la rafraîchit en arrière-plan.
 // Changer CACHE à chaque mise en ligne pour purger les anciennes versions.
-const CACHE = 'planningpro-v2';
+const CACHE = 'planningpro-v3';
+// La police (Google Fonts) a son propre cache, gardé d'une version à l'autre.
+const FONT_CACHE = 'planningpro-fonts';
+const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 const ASSETS = [
   './',
   './index.html',
@@ -8,8 +11,9 @@ const ASSETS = [
   './js/app.js',
   './js/calendar.js',
   './js/cycle.js',
+  './js/cycle-view.js',
   './js/icons.js',
-  './js/options.js',
+  './js/settings.js',
   './js/store.js',
   './js/theme.js',
   './js/ui.js',
@@ -29,14 +33,28 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== FONT_CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });
 
 self.addEventListener('fetch', event => {
   const { request } = event;
-  if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) return;
+  if (request.method !== 'GET') return;
+  const url = new URL(request.url);
+
+  if (FONT_HOSTS.includes(url.hostname)) {
+    event.respondWith(caches.open(FONT_CACHE).then(async cache => {
+      const cached = await cache.match(request);
+      if (cached) return cached;
+      const response = await fetch(request);
+      if (response.ok || response.type === 'opaque') cache.put(request, response.clone());
+      return response;
+    }));
+    return;
+  }
+
+  if (url.origin !== self.location.origin) return;
 
   event.respondWith(caches.open(CACHE).then(async cache => {
     const cached = await cache.match(request, { ignoreSearch: true });

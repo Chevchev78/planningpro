@@ -9,8 +9,12 @@ function luminance(hex) {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-// Pictogramme blanc si le contraste le permet (≥ 3:1), sinon foncé.
-export const onColor = hex => (1.05 / (luminance(hex) + 0.05) >= 3 ? '#ffffff' : '#111827');
+// Texte posé sur une couleur de poste : blanc ou quasi-noir, celui qui contraste le plus.
+const DARK = '#0d0d0f';
+export function onColor(hex) {
+  const l = luminance(hex);
+  return 1.05 / (l + 0.05) >= (l + 0.05) / (luminance(DARK) + 0.05) ? '#ffffff' : DARK;
+}
 
 export function applyTheme(state) {
   const dark = state.dark ?? systemDark.matches;
@@ -20,7 +24,7 @@ export function applyTheme(state) {
     root.style.setProperty(`--c-${t}`, state.colors[t]);
     root.style.setProperty(`--on-c-${t}`, onColor(state.colors[t]));
   }
-  document.querySelector('meta[name="theme-color"]').content = dark ? '#0f1115' : '#f4f5f8';
+  document.querySelector('meta[name="theme-color"]').content = dark ? '#0d0d0f' : '#f4f4f5';
 }
 
 export function followSystemTheme(getState) {

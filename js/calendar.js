@@ -1,17 +1,19 @@
-import { store, TYPES, LABELS, PHRASES } from './store.js';
-import { todayISO, dayNum, isoFromParts, monthCells, dayInfo } from './cycle.js';
+import { store, TYPES, LABELS } from './store.js';
+import { todayISO, dayNum, addDays, isoFromParts, monthCells, dayInfo } from './cycle.js';
 import { $, esc, typeVars, reducedMotion, autoGrow } from './ui.js';
-import { icon } from './icons.js';
 
 const fmtMonth = new Intl.DateTimeFormat('fr-FR', { month: 'long' });
-const fmtLong = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-const fmtShort = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+const fmtKicker = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+const fmtDay = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric' });
+const fmtDayMonth = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'short' });
+const fmtAria = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
 const toDate = iso => new Date(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8));
 const capitalize = s => s.charAt(0).toUpperCase() + s.slice(1);
 const monthOf = iso => ({ y: +iso.slice(0, 4), m: +iso.slice(5, 7) - 1 });
 const addMonths = (v, n) => { const d = new Date(v.y, v.m + n, 1); return { y: d.getFullYear(), m: d.getMonth() }; };
 const monthIndex = v => v.y * 12 + v.m;
+const isRest = t => t === 'repos' || t === 'conge';
 
 function relative(diff) {
   if (diff === 0) return "Aujourd'hui";
@@ -32,19 +34,19 @@ export function initCalendar() {
   function render() {
     renderMonth();
     renderDay();
-    renderStats();
+    renderLegend();
   }
 
   function cellHTML(cell, active) {
     const info = dayInfo(store.state, cell.iso);
     const isToday = cell.iso === today;
     const isSelected = active && cell.iso === selected;
-    const cls = ['cell', !cell.inMonth && 'out', info.conge && 'conge', isToday && 'today', isSelected && 'selected', info.note && 'has-note']
+    const cls = ['cell', !cell.inMonth && 'out', info.type === 'repos' && 'repos', isToday && 'today', isSelected && 'selected', info.note && 'has-note']
       .filter(Boolean).join(' ');
-    const label = `${fmtShort.format(toDate(cell.iso))}, ${LABELS[info.type]}${info.note ? ', avec une note' : ''}`;
+    const label = `${fmtAria.format(toDate(cell.iso))}, ${LABELS[info.type]}${info.note ? ', avec une note' : ''}`;
     return `<button type="button" class="${cls}" data-iso="${cell.iso}" style="${typeVars(info.type)}" aria-label="${esc(label)}"`
       + `${active ? ` aria-pressed="${isSelected}"` : ''}${isToday ? ' aria-current="date"' : ''}${active && cell.inMonth ? '' : ' tabindex="-1"'}>`
-      + `<span class="num">${cell.day}</span><span class="bar"></span></button>`;
+      + `<span class="num">${cell.day}</span></button>`;
   }
 
   // Trois mois côte à côte (précédent, courant, suivant) pour que le swipe suive le doigt.
@@ -57,17 +59,44 @@ export function initCalendar() {
     }).join('');
   }
 
+  // « Demain » puis le prochain changement de poste après ce jour-là.
+  function nextRows(iso, diff) {
+    const s = store.state;
+    const t1 = dayInfo(s, addDays(iso, 1)).type;
+    const rows = [[diff === 0 ? 'Demain' : 'Le lendemain', t1, LABELS[t1]]];
+    for (let k = 2; k <= 120; k++) {
+      const d = addDays(iso, k);
+      const t = dayInfo(s, d).type;
+      if (t === t1) continue;
+      const fmt = d.slice(0, 7) === iso.slice(0, 7) ? fmtDay : fmtDayMonth;
+      rows.push([capitalize(fmt.format(toDate(d))), t, LABELS[t] + (isRest(t1) && !isRest(t) ? ' · reprise' : '')]);
+      break;
+    }
+    return rows.map(([lbl, t, val]) =>
+      `<div class="next-row" style="${typeVars(t)}"><span class="dot"></span><span class="lbl">${lbl}</span><span class="val">${val}</span></div>`).join('');
+  }
+
   function renderDay() {
     const s = store.state;
+    const n = s.cycle.days.length;
     const info = dayInfo(s, selected);
-    $('#day-kicker').textContent = `${relative(dayNum(selected) - dayNum(today))} · Jour ${info.index + 1} sur ${s.cycle.days.length}`;
-    $('#day-date').textContent = capitalize(fmtLong.format(toDate(selected)));
-    $('#shift-row').setAttribute('style', typeVars(info.type));
-    $('#shift-badge').innerHTML = icon(info.type, 26);
-    $('#shift-name').textContent = LABELS[info.type];
-    $('#shift-phrase').textContent = info.conge && info.shift !== 'repos'
-      ? `${PHRASES.conge} · ${LABELS[info.shift].toLowerCase()} au planning`
-      : PHRASES[info.type];
+    const diff = dayNum(selected) - dayNum(today);
+    $('#day-kicker').textContent = `${relative(diff)} · ${fmtKicker.format(toDate(selected))}`;
+    $('#day-shift').textContent = LABELS[info.type];
+    const sub = $('#day-sub');
+    sub.hidden = !(info.conge && info.shift !== 'repos');
+    sub.textContent = sub.hidden ? '' : `${LABELS[info.shift]} au planning`;
+    $('#day-badge').textContent = `Jour ${info.index + 1}/${n}`;
+
+    const bar = $('#cycle-bar');
+    bar.style.setProperty('--n', n);
+    bar.style.setProperty('--gap', n > 20 ? '2px' : '4px');
+    bar.setAttribute('aria-label', `Jour ${info.index + 1} sur ${n} du cycle`);
+    bar.innerHTML = s.cycle.days
+      .map((t, i) => `<span class="${i === info.index ? 'on' : (t === 'repos' ? 'repos' : '')}" style="${typeVars(t)}"></span>`).join('');
+
+    $('#next-list').innerHTML = nextRows(selected, diff);
+
     if (note.dataset.iso !== selected || document.activeElement !== note) {
       note.value = info.note;
       note.dataset.iso = selected;
@@ -76,20 +105,14 @@ export function initCalendar() {
     $('#day-conge').checked = info.conge;
   }
 
-  function renderStats() {
+  function renderLegend() {
     const counts = {};
     for (const c of monthCells(view.y, view.m)) {
       if (!c.inMonth) continue;
       const t = dayInfo(store.state, c.iso).type;
       counts[t] = (counts[t] || 0) + 1;
     }
-    const present = TYPES.filter(t => counts[t]);
-    const worked = present.filter(t => t !== 'repos' && t !== 'conge').reduce((n, t) => n + counts[t], 0);
-    const plural = worked > 1 ? 's' : '';
-    $('#stats-title').textContent = `En ${fmtMonth.format(new Date(view.y, view.m, 1))}`;
-    $('#stats-total').innerHTML = `<b>${worked}</b> jour${plural} travaillé${plural}`;
-    $('#stats-bar').innerHTML = present.map(t => `<span style="${typeVars(t)};flex-grow:${counts[t]}"></span>`).join('');
-    $('#stats-legend').innerHTML = present
+    $('#legend').innerHTML = TYPES.filter(t => counts[t])
       .map(t => `<li style="${typeVars(t)}"><span class="dot"></span>${LABELS[t]} <b>${counts[t]}</b></li>`).join('');
   }
 
@@ -240,5 +263,5 @@ export function initCalendar() {
     });
   });
 
-  return { render, refreshToday };
+  return { render, refreshToday, goToday };
 }

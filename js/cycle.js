@@ -37,11 +37,12 @@ export function dayInfo(state, iso) {
   return { iso, index, shift, conge, type: conge ? 'conge' : shift, note: state.notes[iso] || '' };
 }
 
-// 6 semaines complètes (lundi → dimanche) couvrant le mois. month est 0-based.
+// Semaines complètes (lundi → dimanche) couvrant le mois : 4 à 6 selon le mois. month est 0-based.
 export function monthCells(year, month) {
   const first = dayNum(isoFromParts(year, month + 1, 1));
   const offset = mod(new Date(Date.UTC(year, month, 1)).getUTCDay() - 1, 7);
-  return Array.from({ length: 42 }, (_, i) => {
+  const length = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  return Array.from({ length: Math.ceil((offset + length) / 7) * 7 }, (_, i) => {
     const iso = isoFromDayNum(first - offset + i);
     return { iso, day: Number(iso.slice(8)), inMonth: Number(iso.slice(5, 7)) === month + 1 };
   });

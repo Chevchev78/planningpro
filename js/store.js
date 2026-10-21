@@ -15,20 +15,21 @@ export const LABELS = {
   conge: 'Congé',
 };
 
-// Libellés courts pour les petites puces du cycle
-export const SHORT_LABELS = { ...LABELS, apresmidi: 'Aprèm' };
-
-export const PHRASES = {
-  matin: 'Vous travaillez le matin',
-  apresmidi: "Vous travaillez l'après-midi",
-  soiree: 'Vous travaillez en soirée',
-  nuit: 'Vous travaillez de nuit',
-  journee: 'Vous travaillez en journée',
-  repos: 'Vous êtes de repos',
-  conge: 'Vous êtes en congé',
-};
+// Initiale affichée dans les pastilles du cycle
+export const LETTERS = { matin: 'M', apresmidi: 'A', soiree: 'S', nuit: 'N', journee: 'J', repos: 'R', conge: 'C' };
 
 export const DEFAULT_COLORS = {
+  matin: '#f2b33d',
+  apresmidi: '#ee7b4a',
+  soiree: '#d6517d',
+  nuit: '#4561d6',
+  journee: '#8bc34a',
+  repos: '#5a5a63',
+  conge: '#2bb39a',
+};
+
+// Palette de la v1 : une couleur restée à son ancienne valeur par défaut passe à la nouvelle.
+const OLD_DEFAULT_COLORS = {
   matin: '#f5a524',
   apresmidi: '#2fbf71',
   soiree: '#ef5f5a',
@@ -70,7 +71,7 @@ export function sanitize(raw) {
   const colors = { ...DEFAULT_COLORS };
   for (const t of TYPES) {
     const v = raw.colors && raw.colors[t];
-    if (typeof v === 'string' && HEX_RE.test(v)) colors[t] = v.toLowerCase();
+    if (typeof v === 'string' && HEX_RE.test(v) && v.toLowerCase() !== OLD_DEFAULT_COLORS[t]) colors[t] = v.toLowerCase();
   }
   return {
     cycle: { days: [...c.days], anchor: c.anchor },
