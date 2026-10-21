@@ -182,10 +182,17 @@ h1, h2, h3, p { margin: 0; }
 
 .conge-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; }
 .conge-label { font-size: 15px; font-weight: 500; }
-.seg { display: flex; padding: 2px; border-radius: 999px; background: var(--surface-2); }
-.seg button { min-width: 64px; height: 40px; padding: 0 16px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--text-2); transition: background-color .2s, color .2s; }
-.seg button[aria-checked="true"] { background: var(--surface-3); color: var(--text); }
-.seg #conge-oui[aria-checked="true"] { background: var(--c-conge); color: var(--on-c-conge); }
+/* Interrupteur Non / Oui du congé : on touche ou on fait glisser */
+.switch.lg { width: 84px; height: 36px; }
+.switch.lg input { touch-action: pan-y; }
+.switch.lg .switch-ui::after { width: 30px; height: 30px; }
+.switch.lg input:checked + .switch-ui { background: var(--c-conge); }
+.switch.lg input:checked + .switch-ui::after { transform: translateX(48px); background: #ffffff; }
+.switch-txt { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; font-size: 13px; font-weight: 700; pointer-events: none; transition: opacity .2s; }
+.switch-txt.off { right: 12px; color: var(--text-2); }
+.switch-txt.on { left: 12px; color: var(--on-c-conge); opacity: 0; }
+.switch.lg input:checked + .switch-ui .switch-txt.on { opacity: 1; }
+.switch.lg input:checked + .switch-ui .switch-txt.off { opacity: 0; }
 
 textarea {
   display: block;

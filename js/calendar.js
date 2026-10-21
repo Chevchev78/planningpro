@@ -19,6 +19,7 @@ export function initCalendar() {
   const viewport = $('#month-viewport');
   const note = $('#day-note');
   const dateInput = $('#date-input');
+  const conge = $('#day-conge');
   let today = todayISO();
   let selected = today;
   let view = monthOf(today);
@@ -72,8 +73,7 @@ export function initCalendar() {
     }
     autoGrow(note);
 
-    $('#conge-oui').setAttribute('aria-checked', info.conge);
-    $('#conge-non').setAttribute('aria-checked', !info.conge);
+    conge.checked = info.conge;
     dateInput.value = selected;
   }
 
@@ -246,7 +246,7 @@ export function initCalendar() {
     renderLegend();
   });
 
-  // Jour de congé : Non / Oui
+  // Jour de congé : un toucher bascule, un glissement vers la droite met Oui, vers la gauche Non.
   const setConge = on => {
     const iso = selected;
     store.update(s => {
@@ -254,8 +254,23 @@ export function initCalendar() {
       else delete s.conges[iso];
     });
   };
-  $('#conge-oui').addEventListener('click', () => setConge(true));
-  $('#conge-non').addEventListener('click', () => setConge(false));
+  let congeDownX = null;
+  let congeSlide = null;
+  conge.addEventListener('pointerdown', e => {
+    congeDownX = e.clientX;
+    congeSlide = null;
+    conge.setPointerCapture(e.pointerId);
+  });
+  conge.addEventListener('pointerup', e => {
+    if (congeDownX !== null && Math.abs(e.clientX - congeDownX) > 10) congeSlide = e.clientX > congeDownX;
+    congeDownX = null;
+  });
+  // Après un glissement, c'est le sens qui décide, pas la bascule du clic.
+  conge.addEventListener('change', () => {
+    const on = congeSlide ?? conge.checked;
+    congeSlide = null;
+    setConge(on);
+  });
 
   return { render, refreshToday, goToday };
 }

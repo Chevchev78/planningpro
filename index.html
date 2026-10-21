@@ -65,11 +65,11 @@
         <label class="sr-only" for="day-note">Note</label>
         <textarea id="day-note" rows="1" placeholder="Note…"></textarea>
         <div class="conge-row">
-          <span class="conge-label" id="conge-label">Jour de congé</span>
-          <div class="seg" role="radiogroup" aria-labelledby="conge-label">
-            <button type="button" role="radio" id="conge-non" aria-checked="true">Non</button>
-            <button type="button" role="radio" id="conge-oui" aria-checked="false">Oui</button>
-          </div>
+          <label class="conge-label" for="day-conge">Jour de congé</label>
+          <span class="switch lg">
+            <input type="checkbox" id="day-conge" role="switch">
+            <span class="switch-ui"><span class="switch-txt on">Oui</span><span class="switch-txt off">Non</span></span>
+          </span>
         </div>
       </article>
     </main>
