@@ -5,6 +5,11 @@ import { initOptions } from './options.js';
 import { $, $$, typeVars } from './ui.js';
 import { icon } from './icons.js';
 
+// Safari iOS ignore user-scalable=no : on bloque le pincement à la source.
+for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
+  document.addEventListener(type, e => e.preventDefault(), { passive: false });
+}
+
 store.load();
 applyTheme(store.state);
 followSystemTheme(() => store.state);

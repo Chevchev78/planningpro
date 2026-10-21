@@ -67,7 +67,8 @@
 }
 
 /* ---------- Base ---------- */
-html { background: var(--bg); -webkit-text-size-adjust: 100%; }
+/* Pas de zoom : ni pincement ni double-tap (la 2e valeur l'emporte là où elle est comprise) */
+html { background: var(--bg); -webkit-text-size-adjust: 100%; touch-action: manipulation; touch-action: pan-x pan-y; }
 body {
   margin: 0;
   min-height: 100dvh;

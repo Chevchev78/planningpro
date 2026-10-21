@@ -1,6 +1,6 @@
 // Hors-ligne : on sert la copie en cache tout de suite, puis on la rafraîchit en arrière-plan.
 // Changer CACHE à chaque mise en ligne pour purger les anciennes versions.
-const CACHE = 'planningpro-v1';
+const CACHE = 'planningpro-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -21,7 +21,9 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
+  // cache: 'reload' contourne le cache HTTP de GitHub Pages (10 min) pour prendre la vraie nouvelle version.
+  const requests = ASSETS.map(url => new Request(url, { cache: 'reload' }));
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(requests)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', event => {
