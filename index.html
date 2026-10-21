@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PlanningPro</title>
+<meta name="description" content="PlanningPro : votre planning de travail en cycle (4/2, 3/3, 2/2/2…) en un coup d'œil.">
+<meta name="theme-color" content="#0f1115">
+<meta name="color-scheme" content="dark light">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="PlanningPro">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="css/style.css">
+<script>
+  // Applique le thème avant l'affichage pour éviter un flash de la mauvaise couleur.
+  try {
+    var saved = JSON.parse(localStorage.getItem('planningpro.v1') || 'null');
+    var dark = saved && typeof saved.dark === 'boolean' ? saved.dark : matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  } catch (e) {}
+</script>
+<script type="module" src="js/app.js"></script>
+</head>
+<body>
+<div class="app">
+
+  <!-- Calendrier -->
+  <section class="view" data-view="calendar" hidden>
+    <header class="topbar">
+      <div class="brand"><img src="icons/icon.svg" alt="" width="30" height="30"><span>PlanningPro</span></div>
+      <div class="topbar-actions">
+        <button type="button" class="pill-btn" id="btn-today" data-icon="today" data-size="16">Aujourd'hui</button>
+        <a class="icon-btn" href="#reglages" aria-label="Réglages" data-icon="settings"></a>
+      </div>
+    </header>
+    <main class="content cal-layout">
+      <div class="cal-main">
+      <div class="month-head">
+        <h1 class="month-title" id="month-title" aria-live="polite"></h1>
+        <div class="month-nav">
+          <button type="button" class="icon-btn" id="prev-month" aria-label="Mois précédent" data-icon="chevronLeft"></button>
+          <button type="button" class="icon-btn" id="next-month" aria-label="Mois suivant" data-icon="chevronRight"></button>
+        </div>
+      </div>
+      <div class="weekdays" aria-hidden="true">
+        <span>lun</span><span>mar</span><span>mer</span><span>jeu</span><span>ven</span><span>sam</span><span>dim</span>
+      </div>
+      <div class="month-viewport" id="month-viewport"><div class="month-track" id="month-track"></div></div>
+      </div>
+
+      <div class="cal-side">
+      <article class="card day-card">
+        <p class="day-kicker" id="day-kicker"></p>
+        <h2 class="day-date" id="day-date"></h2>
+        <div class="shift-row" id="shift-row">
+          <span class="shift-badge" id="shift-badge"></span>
+          <div>
+            <p class="shift-name" id="shift-name"></p>
+            <p class="shift-phrase" id="shift-phrase"></p>
+          </div>
+        </div>
+        <label class="field-label" for="day-note">Note</label>
+        <textarea id="day-note" rows="1" placeholder="Ajouter une note…"></textarea>
+        <div class="row switch-row" style="--c:var(--c-conge);--on-c:var(--on-c-conge)">
+          <span class="row-icon" data-icon="conge" data-size="18"></span>
+          <label class="row-label" for="day-conge">Jour de congé</label>
+          <span class="switch"><input type="checkbox" id="day-conge"><span class="switch-ui"></span></span>
+        </div>
+      </article>
+
+      <section class="card stats-card">
+        <div class="stats-head">
+          <h2 class="stats-title" id="stats-title"></h2>
+          <span class="stats-total" id="stats-total"></span>
+        </div>
+        <div class="stats-bar" id="stats-bar"></div>
+        <ul class="stats-legend" id="stats-legend"></ul>
+      </section>
+      </div>
+    </main>
+  </section>
+
+  <!-- Réglages -->
+  <section class="view" data-view="options" hidden>
+    <header class="topbar sub">
+      <a class="back-btn" href="#" data-icon="chevronLeft">Calendrier</a>
+      <h1 class="topbar-title">Réglages</h1>
+      <span></span>
+    </header>
+    <main class="content">
+      <h2 class="section-title">Mon cycle</h2>
+      <div class="card group">
+        <div class="row">
+          <span class="row-label">Durée du cycle</span>
+          <div class="stepper">
+            <button type="button" id="len-minus" aria-label="Raccourcir le cycle" data-icon="minus" data-size="18"></button>
+            <output id="cycle-len"></output>
+            <button type="button" id="len-plus" aria-label="Allonger le cycle" data-icon="plus" data-size="18"></button>
+          </div>
+        </div>
+        <div class="cycle-grid" id="cycle-grid"></div>
+        <div class="row">
+          <span class="row-label">Aujourd'hui</span>
+          <div class="stepper">
+            <button type="button" id="today-minus" aria-label="Jour précédent du cycle" data-icon="minus" data-size="18"></button>
+            <output id="cycle-today"></output>
+            <button type="button" id="today-plus" aria-label="Jour suivant du cycle" data-icon="plus" data-size="18"></button>
+          </div>
+        </div>
+      </div>
+      <p class="section-foot">Touchez un jour pour choisir votre poste. Le jour entouré, c'est aujourd'hui.</p>
+
+      <h2 class="section-title">Apparence</h2>
+      <div class="card group">
+        <div class="row" style="--c:var(--accent);--on-c:#fff">
+          <span class="row-icon" data-icon="moon" data-size="18"></span>
+          <label class="row-label" for="dark-toggle">Mode sombre</label>
+          <span class="switch"><input type="checkbox" id="dark-toggle"><span class="switch-ui"></span></span>
+        </div>
+        <div class="rows" id="color-rows"></div>
+        <button type="button" class="row row-btn accent" id="reset-colors"><span class="row-icon neutral" data-icon="reset" data-size="18"></span><span class="row-label">Couleurs d'origine</span></button>
+      </div>
+
+      <h2 class="section-title">Sauvegarde</h2>
+      <div class="card group">
+        <button type="button" class="row row-btn" id="btn-export"><span class="row-icon neutral" data-icon="download" data-size="18"></span><span class="row-label">Exporter mes données</span></button>
+        <button type="button" class="row row-btn" id="btn-import"><span class="row-icon neutral" data-icon="upload" data-size="18"></span><span class="row-label">Importer une sauvegarde</span></button>
+      </div>
+      <input type="file" id="import-file" accept=".json,application/json" hidden>
+      <p class="section-foot">Vos données restent sur cet appareil. Exportez-les pour les garder ou les transférer sur un autre téléphone.</p>
+
+      <h2 class="section-title">Aide</h2>
+      <div class="card group">
+        <a class="row row-btn" href="#guide"><span class="row-icon neutral" data-icon="help" data-size="18"></span><span class="row-label">Guide de démarrage</span><span class="chev" data-icon="chevronRight" data-size="18"></span></a>
+        <a class="row row-btn" href="#apropos"><span class="row-icon neutral" data-icon="info" data-size="18"></span><span class="row-label">À propos</span><span class="chev" data-icon="chevronRight" data-size="18"></span></a>
+      </div>
+    </main>
+  </section>
+
+  <!-- Guide -->
+  <section class="view" data-view="help" hidden>
+    <header class="topbar sub">
+      <a class="back-btn" href="#reglages" id="help-back" data-icon="chevronLeft">Réglages</a>
+      <h1 class="topbar-title">Guide</h1>
+      <span></span>
+    </header>
+    <main class="content">
+      <div class="hero">
+        <img class="hero-logo" src="icons/icon.svg" alt="" width="84" height="84">
+        <h1>Bienvenue sur PlanningPro</h1>
+        <p>Votre planning en cycle (4/2, 3/3, 2/2/2 ou tout autre roulement), lisible d'un coup d'œil.</p>
+      </div>
+      <ol class="steps">
+        <li class="card step">
+          <div class="step-head">
+            <span class="step-num">1</span>
+            <div>
+              <h3>Indiquez la durée de votre cycle</h3>
+              <p>Le nombre de jours avant que votre roulement recommence. Deux matins, deux nuits et deux repos font un cycle de 6 jours.</p>
+            </div>
+          </div>
+          <div class="demo" aria-hidden="true">
+            <div class="stepper"><span class="step-btn" data-icon="minus" data-size="18"></span><output>6 jours</output><span class="step-btn" data-icon="plus" data-size="18"></span></div>
+          </div>
+        </li>
+        <li class="card step">
+          <div class="step-head">
+            <span class="step-num">2</span>
+            <div>
+              <h3>Choisissez votre poste pour chaque jour</h3>
+              <p>Matin, après-midi, soirée, nuit, journée ou repos.</p>
+            </div>
+          </div>
+          <div class="demo" aria-hidden="true"><div class="demo-chips" id="demo-cycle"></div></div>
+        </li>
+        <li class="card step">
+          <div class="step-head">
+            <span class="step-num">3</span>
+            <div>
+              <h3>Dites où vous en êtes aujourd'hui</h3>
+              <p>Si vous attaquez votre première nuit aujourd'hui, vous êtes au jour 3.</p>
+            </div>
+          </div>
+          <div class="demo demo-col" aria-hidden="true">
+            <div class="stepper"><span class="step-btn" data-icon="minus" data-size="18"></span><output>Jour 3</output><span class="step-btn" data-icon="plus" data-size="18"></span></div>
+            <div class="demo-chips" id="demo-today"></div>
+          </div>
+        </li>
+      </ol>
+      <button type="button" class="primary-btn" id="btn-start">Configurer mon cycle</button>
+      <p class="hint">Vous pourrez tout modifier plus tard dans les Réglages.</p>
+    </main>
+  </section>
+
+  <!-- À propos -->
+  <section class="view" data-view="about" hidden>
+    <header class="topbar sub">
+      <a class="back-btn" href="#reglages" data-icon="chevronLeft">Réglages</a>
+      <h1 class="topbar-title">À propos</h1>
+      <span></span>
+    </header>
+    <main class="content">
+      <div class="hero">
+        <img class="hero-logo" src="icons/icon.svg" alt="" width="84" height="84">
+        <h1>PlanningPro</h1>
+        <p>Version 1.0</p>
+      </div>
+      <div class="card prose">
+        <p>PlanningPro est un calendrier pensé pour celles et ceux qui travaillent en cycles non hebdomadaires : 4/2, 3/3, 2/2/2, 12 h… Configurez votre roulement une fois et voyez instantanément comment vous travaillez à n'importe quelle date.</p>
+        <p>Ajoutez des notes, marquez vos congés, personnalisez les couleurs : tout se met à jour automatiquement.</p>
+      </div>
+      <div class="card prose">
+        <h2>Vos données restent chez vous</h2>
+        <p>Pas de compte, pas de serveur, pas de publicité. Votre cycle, vos notes et vos congés sont enregistrés uniquement sur cet appareil.</p>
+      </div>
+      <p class="section-foot center"><a href="https://github.com/Chevchev78/planningpro" target="_blank" rel="noopener">Code source sur GitHub</a></p>
+    </main>
+  </section>
+</div>
+
+<div class="sheet-backdrop" id="sheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <div class="sheet-grabber"></div>
+    <h3 id="sheet-title"></h3>
+    <p class="sheet-sub">Comment travaillez-vous ce jour-là ?</p>
+    <div class="sheet-options" id="sheet-options"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
