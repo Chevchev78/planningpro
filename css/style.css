@@ -171,65 +171,31 @@ h1, h2, h3, p { margin: 0; }
 .card-label { font-size: 13px; font-weight: 600; color: var(--text-2); }
 .card-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 
-/* ---------- Carte du jour (compacte : le mois entier reste visible) ---------- */
-.day-card { padding: 12px 14px 14px 16px; }
-.day-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.day-kicker { font-size: 13px; color: var(--text-2); }
-.badge { flex: none; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); font-size: 12px; font-weight: 600; white-space: nowrap; }
-.day-main { display: flex; align-items: center; gap: 8px; }
-.day-title { flex: 1; min-width: 0; }
-.day-shift { overflow: hidden; font-size: 30px; font-weight: 700; line-height: 1.15; letter-spacing: -.03em; white-space: nowrap; text-overflow: ellipsis; }
-.day-sub { font-size: 13px; color: var(--text-2); }
-
-.act-btn {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--surface-2);
-  color: var(--text);
-  transition: transform .15s var(--ease), background-color .2s, color .2s;
-}
-.act-btn:active { transform: scale(.92); }
-#note-btn[aria-pressed="true"] { background: var(--text); color: var(--bg); }
-.act-btn.conge[aria-pressed="true"] { background: var(--c); color: var(--on-c); }
-
-.cycle-bar { display: grid; grid-template-columns: repeat(var(--n, 6), minmax(0, 1fr)); gap: var(--gap, 4px); margin-top: 8px; }
-.cycle-bar span { height: 4px; border-radius: 2px; background: var(--c); opacity: .45; }
-.cycle-bar .repos { background: var(--surface-3); opacity: 1; }
-.cycle-bar .on { background: var(--text); opacity: 1; }
-
-.next-line { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 10px; font-size: 14px; color: var(--text-2); }
-.next-item { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
-.next-item b { font-weight: 600; color: var(--text); }
+/* ---------- Jour sélectionné : poste, note et congé, sous le calendrier ---------- */
+.day-card { margin-top: 10px; padding: 10px 12px 12px 14px; }
+.day-head { display: flex; align-items: center; gap: 8px; min-height: 36px; }
+.day-date { flex: 1; min-width: 0; overflow: hidden; font-size: 16px; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
+.shift-pill { flex: none; padding: 5px 12px; border-radius: 999px; background: var(--c); color: var(--on-c); font-size: 14px; font-weight: 700; }
+.shift-pill.repos { background: var(--surface-3); color: var(--text); }
+.badge { flex: none; padding: 5px 9px; border-radius: 999px; background: var(--surface-2); font-size: 12px; font-weight: 600; white-space: nowrap; }
 .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
 
-.note-preview {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  min-height: 40px;
-  margin-top: 10px;
-  padding: 8px 12px;
-  border-radius: 12px;
-  background: var(--surface-2);
-  font-size: 15px;
-  font-weight: 500;
-  text-align: left;
-}
-.note-preview span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.conge-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; }
+.conge-label { font-size: 15px; font-weight: 500; }
+.seg { display: flex; padding: 2px; border-radius: 999px; background: var(--surface-2); }
+.seg button { min-width: 64px; height: 40px; padding: 0 16px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--text-2); transition: background-color .2s, color .2s; }
+.seg button[aria-checked="true"] { background: var(--surface-3); color: var(--text); }
+.seg #conge-oui[aria-checked="true"] { background: var(--c-conge); color: var(--on-c-conge); }
 
 textarea {
   display: block;
   width: 100%;
-  min-height: 46px;
-  margin-top: 10px;
-  padding: 12px 14px;
+  min-height: 44px;
+  max-height: 96px;
+  margin-top: 8px;
+  padding: 11px 14px;
   resize: none;
-  overflow: hidden;
+  overflow-y: auto;
   font: inherit;
   font-size: 16px;
   line-height: 1.4;
@@ -262,7 +228,7 @@ textarea:focus { outline: none; border-color: var(--text-2); }
 .switch input:focus-visible + .switch-ui { outline: 2px solid var(--focus); outline-offset: 2px; }
 
 /* ---------- Calendrier ---------- */
-.cal-card { margin-top: 10px; padding: 10px 10px 12px; }
+.cal-card { padding: 10px 10px 12px; }
 .weekdays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); margin-bottom: 2px; font-size: 11px; font-weight: 600; text-align: center; color: var(--text-2); }
 .month-viewport { overflow: hidden; margin: 0 -4px; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
 .month-track { display: flex; width: 300%; transform: translateX(-33.3333%); }
@@ -277,7 +243,7 @@ textarea:focus { outline: none; border-color: var(--text-2); }
   position: relative;
   /* La hauteur suit l'écran : tout le mois tient au-dessus de la barre d'onglets. */
   height: 44px;
-  height: clamp(36px, calc((100dvh - 480px - var(--safe-t) - var(--safe-b)) / 6), 56px);
+  height: clamp(34px, calc((100dvh - 500px - var(--safe-t) - var(--safe-b)) / 6), 56px);
   display: grid;
   place-items: center;
   border-radius: 12px;
@@ -446,7 +412,6 @@ button.pill:active { transform: scale(.94); }
 /* ---------- Petits écrans et ordinateur ---------- */
 @media (max-width: 360px), (max-height: 700px) {
   .page-title { font-size: 24px; }
-  .day-shift { font-size: 26px; }
   .cell { font-size: 14px; }
 }
 
@@ -454,7 +419,7 @@ button.pill:active { transform: scale(.94); }
   .app { max-width: 1000px; }
   .view:not([data-view="calendar"]) > * { max-width: 560px; margin-left: auto; margin-right: auto; }
   .cal-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; grid-template-areas: "cal day"; gap: 20px; align-items: start; }
-  .day-card { grid-area: day; position: sticky; top: 20px; }
+  .day-card { grid-area: day; position: sticky; top: 20px; margin-top: 0; }
   .cal-card { grid-area: cal; margin-top: 0; }
   .cell { height: 64px; font-size: 17px; }
 }

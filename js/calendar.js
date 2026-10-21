@@ -1,13 +1,11 @@
 import { store, TYPES, LABELS } from './store.js';
-import { todayISO, dayNum, addDays, isoFromParts, monthCells, dayInfo } from './cycle.js';
+import { todayISO, dayNum, isoFromParts, monthCells, dayInfo } from './cycle.js';
 import { $, esc, typeVars, reducedMotion, autoGrow } from './ui.js';
-import { icon } from './icons.js';
 
 const fmtMonth = new Intl.DateTimeFormat('fr-FR', { month: 'long' });
-const fmtKicker = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
-const fmtKickerYear = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-const fmtDay = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric' });
-const fmtDayMonth = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+const fmtToday = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric' });
+const fmtDate = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+const fmtDateYear = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 const fmtAria = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
 const toDate = iso => new Date(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8));
@@ -15,26 +13,16 @@ const capitalize = s => s.charAt(0).toUpperCase() + s.slice(1);
 const monthOf = iso => ({ y: +iso.slice(0, 4), m: +iso.slice(5, 7) - 1 });
 const addMonths = (v, n) => { const d = new Date(v.y, v.m + n, 1); return { y: d.getFullYear(), m: d.getMonth() }; };
 const monthIndex = v => v.y * 12 + v.m;
-const isRest = t => t === 'repos' || t === 'conge';
-
-function relative(diff) {
-  if (diff === 0) return "Aujourd'hui";
-  if (diff === 1) return 'Demain';
-  if (diff === -1) return 'Hier';
-  return diff > 0 ? `Dans ${diff} jours` : `Il y a ${-diff} jours`;
-}
 
 export function initCalendar() {
   const track = $('#month-track');
   const viewport = $('#month-viewport');
   const note = $('#day-note');
-  const preview = $('#note-preview');
   const dateInput = $('#date-input');
   let today = todayISO();
   let selected = today;
   let view = monthOf(today);
   let animating = false;
-  let editingNote = false;
 
   function render() {
     renderMonth();
@@ -64,63 +52,28 @@ export function initCalendar() {
     }).join('');
   }
 
-  // « Demain » puis le prochain changement de poste après ce jour-là, sur une seule ligne.
-  function nextItems(iso, diff) {
-    const s = store.state;
-    const t1 = dayInfo(s, addDays(iso, 1)).type;
-    const items = [[diff === 0 ? 'Demain' : 'Lendemain', t1]];
-    for (let k = 2; k <= 120; k++) {
-      const d = addDays(iso, k);
-      const t = dayInfo(s, d).type;
-      if (t === t1) continue;
-      const fmt = d.slice(0, 7) === iso.slice(0, 7) ? fmtDay : fmtDayMonth;
-      const when = fmt.format(toDate(d));
-      items.push([isRest(t1) && !isRest(t) ? `Reprise ${when}` : capitalize(when), t]);
-      break;
-    }
-    return items.map(([lbl, t]) =>
-      `<span class="next-item" style="${typeVars(t)}"><span class="dot"></span>${lbl} <b>${LABELS[t]}</b></span>`).join('');
-  }
-
-  function renderNote(text) {
-    $('#note-btn').setAttribute('aria-pressed', !!text);
-    note.hidden = !editingNote;
-    preview.hidden = editingNote || !text;
-    preview.innerHTML = `${icon('note', 16)}<span>${esc(text)}</span>`;
-  }
-
   function renderDay() {
     const s = store.state;
-    const n = s.cycle.days.length;
     const info = dayInfo(s, selected);
-    const diff = dayNum(selected) - dayNum(today);
-    // Au-delà d'un mois, « Dans 1605 jours » ne parle à personne : on affiche la date avec l'année.
-    $('#day-kicker').textContent = Math.abs(diff) <= 31
-      ? `${relative(diff)} · ${fmtKicker.format(toDate(selected))}`
-      : capitalize(fmtKickerYear.format(toDate(selected)));
-    $('#day-shift').textContent = LABELS[info.type];
-    const sub = $('#day-sub');
-    sub.hidden = !(info.conge && info.shift !== 'repos');
-    sub.textContent = sub.hidden ? '' : `${LABELS[info.shift]} au planning`;
-    $('#day-badge').textContent = `Jour ${info.index + 1}/${n}`;
+    const date = toDate(selected);
+    const fmt = selected.slice(0, 4) === today.slice(0, 4) ? fmtDate : fmtDateYear;
+    $('#day-date').textContent = selected === today ? `Aujourd'hui, ${fmtToday.format(date)}` : capitalize(fmt.format(date));
 
-    const bar = $('#cycle-bar');
-    bar.style.setProperty('--n', n);
-    bar.style.setProperty('--gap', n > 20 ? '2px' : '4px');
-    bar.setAttribute('aria-label', `Jour ${info.index + 1} sur ${n} du cycle`);
-    bar.innerHTML = s.cycle.days
-      .map((t, i) => `<span class="${i === info.index ? 'on' : (t === 'repos' ? 'repos' : '')}" style="${typeVars(t)}"></span>`).join('');
+    const pill = $('#day-shift');
+    pill.textContent = LABELS[info.type];
+    pill.className = `shift-pill${info.type === 'repos' ? ' repos' : ''}`;
+    pill.setAttribute('style', typeVars(info.type));
+    $('#day-badge').textContent = `J${info.index + 1}/${s.cycle.days.length}`;
 
-    $('#next-line').innerHTML = nextItems(selected, diff);
-
-    if (note.dataset.iso !== selected) editingNote = false;
+    // On ne touche pas au texte pendant la frappe dans la note de ce même jour.
     if (note.dataset.iso !== selected || document.activeElement !== note) {
       note.value = info.note;
       note.dataset.iso = selected;
     }
-    renderNote(info.note);
-    if (editingNote) autoGrow(note);
-    $('#day-conge').setAttribute('aria-pressed', info.conge);
+    autoGrow(note);
+
+    $('#conge-oui').setAttribute('aria-checked', info.conge);
+    $('#conge-non').setAttribute('aria-checked', !info.conge);
     dateInput.value = selected;
   }
 
@@ -280,23 +233,7 @@ export function initCalendar() {
     if (e.key === 'ArrowRight') goMonth(1);
   });
 
-  // La note ne s'ouvre qu'à la demande, pour garder la carte compacte.
-  function openNote() {
-    editingNote = true;
-    renderNote(note.value);
-    autoGrow(note);
-    note.focus();
-  }
-  $('#note-btn').addEventListener('click', () => {
-    if (editingNote) note.blur();
-    else openNote();
-  });
-  preview.addEventListener('click', openNote);
-  note.addEventListener('blur', () => {
-    editingNote = false;
-    renderNote(note.value.trim() ? note.value : '');
-  });
-
+  // Note : on écrit directement dans le champ, c'est enregistré à chaque lettre.
   note.addEventListener('input', () => {
     const iso = note.dataset.iso;
     const text = note.value;
@@ -305,17 +242,20 @@ export function initCalendar() {
       if (text.trim()) s.notes[iso] = text;
       else delete s.notes[iso];
     }, { silent: true });
-    $('#note-btn').setAttribute('aria-pressed', !!text.trim());
     for (const b of track.querySelectorAll(`[data-iso="${iso}"]`)) b.classList.toggle('has-note', !!text.trim());
+    renderLegend();
   });
 
-  $('#day-conge').addEventListener('click', () => {
+  // Jour de congé : Non / Oui
+  const setConge = on => {
     const iso = selected;
     store.update(s => {
-      if (s.conges[iso]) delete s.conges[iso];
-      else s.conges[iso] = true;
+      if (on) s.conges[iso] = true;
+      else delete s.conges[iso];
     });
-  });
+  };
+  $('#conge-oui').addEventListener('click', () => setConge(true));
+  $('#conge-non').addEventListener('click', () => setConge(false));
 
   return { render, refreshToday, goToday };
 }
