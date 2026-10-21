@@ -1,11 +1,13 @@
 import { store, TYPES, LABELS } from './store.js';
 import { todayISO, dayNum, addDays, isoFromParts, monthCells, dayInfo } from './cycle.js';
 import { $, esc, typeVars, reducedMotion, autoGrow } from './ui.js';
+import { icon } from './icons.js';
 
 const fmtMonth = new Intl.DateTimeFormat('fr-FR', { month: 'long' });
 const fmtKicker = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
-const fmtDay = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric' });
-const fmtDayMonth = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'short' });
+const fmtKickerYear = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+const fmtDay = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric' });
+const fmtDayMonth = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
 const fmtAria = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
 const toDate = iso => new Date(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8));
@@ -26,10 +28,13 @@ export function initCalendar() {
   const track = $('#month-track');
   const viewport = $('#month-viewport');
   const note = $('#day-note');
+  const preview = $('#note-preview');
+  const dateInput = $('#date-input');
   let today = todayISO();
   let selected = today;
   let view = monthOf(today);
   let animating = false;
+  let editingNote = false;
 
   function render() {
     renderMonth();
@@ -59,21 +64,29 @@ export function initCalendar() {
     }).join('');
   }
 
-  // « Demain » puis le prochain changement de poste après ce jour-là.
-  function nextRows(iso, diff) {
+  // « Demain » puis le prochain changement de poste après ce jour-là, sur une seule ligne.
+  function nextItems(iso, diff) {
     const s = store.state;
     const t1 = dayInfo(s, addDays(iso, 1)).type;
-    const rows = [[diff === 0 ? 'Demain' : 'Le lendemain', t1, LABELS[t1]]];
+    const items = [[diff === 0 ? 'Demain' : 'Lendemain', t1]];
     for (let k = 2; k <= 120; k++) {
       const d = addDays(iso, k);
       const t = dayInfo(s, d).type;
       if (t === t1) continue;
       const fmt = d.slice(0, 7) === iso.slice(0, 7) ? fmtDay : fmtDayMonth;
-      rows.push([capitalize(fmt.format(toDate(d))), t, LABELS[t] + (isRest(t1) && !isRest(t) ? ' · reprise' : '')]);
+      const when = fmt.format(toDate(d));
+      items.push([isRest(t1) && !isRest(t) ? `Reprise ${when}` : capitalize(when), t]);
       break;
     }
-    return rows.map(([lbl, t, val]) =>
-      `<div class="next-row" style="${typeVars(t)}"><span class="dot"></span><span class="lbl">${lbl}</span><span class="val">${val}</span></div>`).join('');
+    return items.map(([lbl, t]) =>
+      `<span class="next-item" style="${typeVars(t)}"><span class="dot"></span>${lbl} <b>${LABELS[t]}</b></span>`).join('');
+  }
+
+  function renderNote(text) {
+    $('#note-btn').setAttribute('aria-pressed', !!text);
+    note.hidden = !editingNote;
+    preview.hidden = editingNote || !text;
+    preview.innerHTML = `${icon('note', 16)}<span>${esc(text)}</span>`;
   }
 
   function renderDay() {
@@ -81,7 +94,10 @@ export function initCalendar() {
     const n = s.cycle.days.length;
     const info = dayInfo(s, selected);
     const diff = dayNum(selected) - dayNum(today);
-    $('#day-kicker').textContent = `${relative(diff)} · ${fmtKicker.format(toDate(selected))}`;
+    // Au-delà d'un mois, « Dans 1605 jours » ne parle à personne : on affiche la date avec l'année.
+    $('#day-kicker').textContent = Math.abs(diff) <= 31
+      ? `${relative(diff)} · ${fmtKicker.format(toDate(selected))}`
+      : capitalize(fmtKickerYear.format(toDate(selected)));
     $('#day-shift').textContent = LABELS[info.type];
     const sub = $('#day-sub');
     sub.hidden = !(info.conge && info.shift !== 'repos');
@@ -95,25 +111,32 @@ export function initCalendar() {
     bar.innerHTML = s.cycle.days
       .map((t, i) => `<span class="${i === info.index ? 'on' : (t === 'repos' ? 'repos' : '')}" style="${typeVars(t)}"></span>`).join('');
 
-    $('#next-list').innerHTML = nextRows(selected, diff);
+    $('#next-line').innerHTML = nextItems(selected, diff);
 
+    if (note.dataset.iso !== selected) editingNote = false;
     if (note.dataset.iso !== selected || document.activeElement !== note) {
       note.value = info.note;
       note.dataset.iso = selected;
-      autoGrow(note);
     }
-    $('#day-conge').checked = info.conge;
+    renderNote(info.note);
+    if (editingNote) autoGrow(note);
+    $('#day-conge').setAttribute('aria-pressed', info.conge);
+    dateInput.value = selected;
   }
 
   function renderLegend() {
     const counts = {};
+    let notes = 0;
     for (const c of monthCells(view.y, view.m)) {
       if (!c.inMonth) continue;
-      const t = dayInfo(store.state, c.iso).type;
-      counts[t] = (counts[t] || 0) + 1;
+      const info = dayInfo(store.state, c.iso);
+      counts[info.type] = (counts[info.type] || 0) + 1;
+      if (info.note) notes += 1;
     }
-    $('#legend').innerHTML = TYPES.filter(t => counts[t])
-      .map(t => `<li style="${typeVars(t)}"><span class="dot"></span>${LABELS[t]} <b>${counts[t]}</b></li>`).join('');
+    const items = TYPES.filter(t => counts[t])
+      .map(t => `<li style="${typeVars(t)}"><span class="dot"></span>${LABELS[t]} <b>${counts[t]}</b></li>`);
+    if (notes) items.push(`<li><span class="note-mark"></span>Note${notes > 1 ? 's' : ''} <b>${notes}</b></li>`);
+    $('#legend').innerHTML = items.join('');
   }
 
   function select(iso) {
@@ -158,14 +181,18 @@ export function initCalendar() {
     });
   }
 
+  // Va à n'importe quelle date : glissement pour un mois voisin, saut direct au-delà.
+  function goToDate(iso) {
+    const diff = monthIndex(monthOf(iso)) - monthIndex(view);
+    if (Math.abs(diff) === 1) { goMonth(diff, iso); return; }
+    view = monthOf(iso);
+    selected = iso;
+    render();
+  }
+
   function goToday() {
     today = todayISO();
-    const diff = monthIndex(monthOf(today)) - monthIndex(view);
-    if (diff === 0) { selected = today; render(); return; }
-    if (Math.abs(diff) === 1) { goMonth(diff, today); return; }
-    view = monthOf(today);
-    selected = today;
-    render();
+    goToDate(today);
   }
 
   // Le jour change à minuit : on remet « aujourd'hui » à jour au retour dans l'appli.
@@ -181,6 +208,15 @@ export function initCalendar() {
   $('#prev-month').addEventListener('click', () => goMonth(-1));
   $('#next-month').addEventListener('click', () => goMonth(1));
   $('#btn-today').addEventListener('click', goToday);
+
+  // Sur ordinateur, un clic sur le champ n'ouvre pas le calendrier : on le demande.
+  dateInput.addEventListener('click', () => {
+    if (!matchMedia('(hover: hover)').matches) return;
+    try { dateInput.showPicker(); } catch {}
+  });
+  dateInput.addEventListener('change', () => {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateInput.value) && dateInput.value !== selected) goToDate(dateInput.value);
+  });
 
   let drag = null;
   let justDragged = false;
@@ -244,6 +280,23 @@ export function initCalendar() {
     if (e.key === 'ArrowRight') goMonth(1);
   });
 
+  // La note ne s'ouvre qu'à la demande, pour garder la carte compacte.
+  function openNote() {
+    editingNote = true;
+    renderNote(note.value);
+    autoGrow(note);
+    note.focus();
+  }
+  $('#note-btn').addEventListener('click', () => {
+    if (editingNote) note.blur();
+    else openNote();
+  });
+  preview.addEventListener('click', openNote);
+  note.addEventListener('blur', () => {
+    editingNote = false;
+    renderNote(note.value.trim() ? note.value : '');
+  });
+
   note.addEventListener('input', () => {
     const iso = note.dataset.iso;
     const text = note.value;
@@ -252,14 +305,15 @@ export function initCalendar() {
       if (text.trim()) s.notes[iso] = text;
       else delete s.notes[iso];
     }, { silent: true });
+    $('#note-btn').setAttribute('aria-pressed', !!text.trim());
     for (const b of track.querySelectorAll(`[data-iso="${iso}"]`)) b.classList.toggle('has-note', !!text.trim());
   });
 
-  $('#day-conge').addEventListener('change', e => {
+  $('#day-conge').addEventListener('click', () => {
     const iso = selected;
     store.update(s => {
-      if (e.target.checked) s.conges[iso] = true;
-      else delete s.conges[iso];
+      if (s.conges[iso]) delete s.conges[iso];
+      else s.conges[iso] = true;
     });
   });
 

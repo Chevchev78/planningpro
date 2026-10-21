@@ -34,7 +34,11 @@
   <!-- Planning -->
   <section class="view" data-view="calendar" hidden>
     <header class="page-head">
-      <h1 class="page-title" id="month-title" aria-live="polite"></h1>
+      <div class="month-pick">
+        <h1 class="page-title"><span id="month-title" aria-live="polite"></span><span class="title-chev" data-icon="chevronDown" data-size="20"></span></h1>
+        <!-- Champ date invisible posé sur le titre : le toucher ouvre le sélecteur de date du téléphone. -->
+        <input type="date" class="date-input" id="date-input" aria-label="Aller à une date">
+      </div>
       <div class="head-actions">
         <div class="month-nav">
           <button type="button" class="icon-btn" id="prev-month" aria-label="Mois précédent" data-icon="chevronLeft"></button>
@@ -45,23 +49,23 @@
     </header>
     <main class="content cal-layout">
       <article class="card day-card">
-        <div class="day-top">
-          <div>
-            <p class="day-kicker" id="day-kicker"></p>
+        <div class="day-head">
+          <p class="day-kicker" id="day-kicker"></p>
+          <span class="badge" id="day-badge"></span>
+        </div>
+        <div class="day-main">
+          <div class="day-title">
             <p class="day-shift" id="day-shift"></p>
             <p class="day-sub" id="day-sub" hidden></p>
           </div>
-          <span class="badge" id="day-badge"></span>
+          <button type="button" class="act-btn" id="note-btn" aria-label="Note du jour" aria-pressed="false" data-icon="note"></button>
+          <button type="button" class="act-btn conge" id="day-conge" aria-label="Jour de congé" aria-pressed="false" style="--c:var(--c-conge);--on-c:var(--on-c-conge)" data-icon="conge"></button>
         </div>
         <div class="cycle-bar" id="cycle-bar" role="img"></div>
-        <div class="next-list" id="next-list"></div>
+        <p class="next-line" id="next-line"></p>
+        <button type="button" class="note-preview" id="note-preview" hidden></button>
         <label class="sr-only" for="day-note">Note</label>
-        <textarea id="day-note" rows="1" placeholder="Ajouter une note…"></textarea>
-        <div class="toggle-row" style="--c:var(--c-conge);--on-c:var(--on-c-conge)">
-          <span class="dot"></span>
-          <label class="toggle-label" for="day-conge">Jour de congé</label>
-          <span class="switch"><input type="checkbox" id="day-conge"><span class="switch-ui"></span></span>
-        </div>
+        <textarea id="day-note" rows="1" placeholder="Ajouter une note…" hidden></textarea>
       </article>
 
       <section class="card cal-card" aria-label="Calendrier du mois">
